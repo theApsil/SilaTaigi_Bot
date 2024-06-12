@@ -4,7 +4,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import random
 from db import init_db, update_user_bonus, get_user_bonus, reset_user_bonus, add_user
 
-USER_ID = []
+CHAT_DATA = {}
 
 
 # Генерация кода
@@ -48,7 +48,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 async def generate_service_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.chat_id
     code = generate_code()
-    context.chat_data[code] = {'user_id': user_id, 'action': 'service'}
+    CHAT_DATA[code] = {'user_id': user_id, 'action': 'service'}
+
     await update.message.reply_text(f"Ваш код услуги: {code}")
     for item in ADMIN_ID:
         await context.bot.send_message(chat_id=item, text=f"Пользователь {user_id} запросил код услуги: {code}")
@@ -66,17 +67,16 @@ async def confirm_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     except (IndexError, ValueError):
         await update.message.reply_text("Используйте формат: /confirm <code>")
         return
-    print(context.chat_data, context.chat_data[code]['action'])
-    if code in context.chat_data and context.chat_data[code]['action'] == 'service':
-        user_id = context.chat_data[code]['user_id']
+    print(CHAT_DATA)
+    if code in CHAT_DATA and CHAT_DATA[code]['action'] == 'service':
+        user_id = CHAT_DATA[code]['user_id']
         bonus_count = update_user_bonus(user_id)
-
         print(user_id, bonus_count)
         await context.bot.send_message(chat_id=user_id, text=f"Вам зачислен бонус {bonus_count} / 8")
         for admin_id in ADMIN_ID:
             await context.bot.send_message(chat_id=admin_id, text="Код успешно подтверждён")
 
-        del context.chat_data[code]
+        del CHAT_DATA[code]
 
 
 # Проверка бонусов
@@ -97,8 +97,7 @@ async def generate_gift_code(update: Update, context: ContextTypes.DEFAULT_TYPE)
             f"\nКоличество ваших бонусов сейчас: {bonus_count}.")
     else:
         code = generate_code()
-        context.chat_data['gift_code'] = code
-        context.chat_data['action'] = 'gift'
+        CHAT_DATA[code] = {'user_id': user_id, 'action': 'gift'}
 
         await update.message.reply_text(f"Ваш код подарка: {code}")
         for item in ADMIN_ID:
@@ -117,15 +116,15 @@ async def confirm_gift_code(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await update.message.reply_text("Используйте формат: /confirmgift <code>")
         return
 
-    if code in context.chat_data and context.chat_data[code]['action'] == 'gift':
-        user_id = context.chat_data[code]['user_id']
+    if code in CHAT_DATA and CHAT_DATA[code]['action'] == 'gift':
+        user_id = CHAT_DATA[code]['user_id']
         reset_user_bonus(user_id)
 
         gifts = [
             "Спортивный массаж (30 мин)",
             "Антицеллюлитный (30 мин)",
             "Шоколадное обертывание",
-            "Фруктого-ягодное обертывание",
+            "Фруктово-ягодное обертывание",
             "Скидка на следующее посещение 20%",
             "Скидка на следующее посещение 30%",
             "Скидка на следующее посещение 40%",
@@ -133,7 +132,7 @@ async def confirm_gift_code(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         ]
         gift = random.choice(gifts)
 
-        await context.bot.send_message(chat_id=user_id, text=f"🎁🎁🎁 У вас накопился 1 подарок! Ваш подарок: {gift}")
+        await context.bot.send_message(chat_id=user_id, text=f"🎁🎁🎁\nУ вас накопился 1 подарок! Ваш подарок: {gift}")
         for admin_id in ADMIN_ID:
             await context.bot.send_message(chat_id=admin_id, text="Код подарка успешно подтверждён")
 
