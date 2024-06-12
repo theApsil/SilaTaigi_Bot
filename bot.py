@@ -16,7 +16,7 @@ def generate_code():
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.chat_id
     add_user(user_id)
-
+    print(f"log: starting for USER [{user_id}]")
     keyboard = [
         [KeyboardButton("Сгенерировать код услуги")],
         [KeyboardButton("Проверить бонусы")],
@@ -31,10 +31,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    help_text = (
+        "/start - Начать взаимодействие с ботом\n"
+        "/help - Показать список доступных команд\n"
+        "Сгенерировать код услуги - Сгенерировать код для получения услуги\n"
+        "Проверить бонусы - Проверить количество накопленных бонусов\n"
+        "Сгенерировать код подарка - Сгенерировать код для получения подарка"
+    )
+    await update.message.reply_text(help_text)
+
+
 # Обработка сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = update.message.text
-
 
     if text == "Сгенерировать код услуги":
         await generate_service_code(update, context)
@@ -49,7 +59,7 @@ async def generate_service_code(update: Update, context: ContextTypes.DEFAULT_TY
     user_id = update.message.chat_id
     code = generate_code()
     CHAT_DATA[code] = {'user_id': user_id, 'action': 'service'}
-
+    print(f"log: generate service code for USER [{CHAT_DATA[code]['user_id']}")
     await update.message.reply_text(f"Ваш код услуги: {code}")
     for item in ADMIN_ID:
         await context.bot.send_message(chat_id=item, text=f"Пользователь {user_id} запросил код услуги: {code}")
@@ -63,15 +73,14 @@ async def confirm_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     try:
         code = int(update.message.text.split()[1])
-        print(code)
     except (IndexError, ValueError):
         await update.message.reply_text("Используйте формат: /confirm <code>")
         return
-    print(CHAT_DATA)
+    print(f"log: confirming from ADMIN [{update.message.chat_id}]\n"
+          f"for USER [{CHAT_DATA[code]['user_id']}] CODE [{code}]")
     if code in CHAT_DATA and CHAT_DATA[code]['action'] == 'service':
         user_id = CHAT_DATA[code]['user_id']
         bonus_count = update_user_bonus(user_id)
-        print(user_id, bonus_count)
         await context.bot.send_message(chat_id=user_id, text=f"Вам зачислен бонус {bonus_count} / 8")
         for admin_id in ADMIN_ID:
             await context.bot.send_message(chat_id=admin_id, text="Код успешно подтверждён")
@@ -83,6 +92,8 @@ async def confirm_code(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def check_bonuses(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.message.chat_id
     bonus_count = get_user_bonus(user_id)
+    print(f"log: check bonus USER [{user_id}]")
+
     await update.message.reply_text(f"Количество ваших бонусов: {bonus_count} / 8")
 
 
