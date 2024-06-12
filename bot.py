@@ -166,6 +166,10 @@ async def admin_instructions(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await update.message.reply_text(instructions)
 
 
+async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await update.message.reply_text("Неизвестная команда. Используйте /help для получения списка доступных команд.")
+
+
 def main() -> None:
     init_db()
 
