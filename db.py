@@ -48,3 +48,12 @@ def reset_user_bonus(user_id):
     cursor.execute('UPDATE users SET bonus_count = 0 WHERE user_id = ?', (user_id,))
     conn.commit()
     conn.close()
+
+
+def get_all_users():
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id FROM users")
+    user_ids = [row[0] for row in cursor.fetchall()]
+    conn.close()
+    return user_ids

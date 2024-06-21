@@ -1,8 +1,8 @@
-from config import ADMIN_ID, BOT_TOKEN
+from config import ADMIN_ID, BOT_TOKEN, msg
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import random
-from db import init_db, update_user_bonus, get_user_bonus, reset_user_bonus, add_user
+from db import init_db, update_user_bonus, get_user_bonus, reset_user_bonus, add_user, get_all_users
 
 CHAT_DATA = {}
 
@@ -161,13 +161,32 @@ async def admin_instructions(update: Update, context: ContextTypes.DEFAULT_TYPE)
         "1. Когда пользователь запрашивает код услуги, администратор получает сообщение от бота с этим кодом.\n"
         "2. Для подтверждения кода услуги администратор вводит команду в чат с ботом: `/confirm <code>`, заменяя <code> на фактический код.\n"
         "3. Когда пользователь запрашивает код подарка, администратор также получает сообщение от бота с этим кодом.\n"
-        "4. Для подтверждения кода подарка администратор вводит команду в чат с ботом: `/confirmgift <code>`, заменяя <code> на фактический код."
+        "4. Для подтверждения кода подарка администратор вводит команду в чат с ботом: `/confirmgift <code>`, заменяя <code> на фактический код.\n"
+        "5. Для рассылки напишите команду /broadcast и бот разошлёт всем пользователям сезонную акцию.\n"
     )
     await update.message.reply_text(instructions)
 
 
 async def unknown_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("Неизвестная команда. Используйте /help для получения списка доступных команд.")
+
+
+async def broadcast_fixed_message(context: ContextTypes.DEFAULT_TYPE) -> None:
+    users = get_all_users()
+    for user_id in users:
+        try:
+            await context.bot.send_message(chat_id=user_id, text=msg)
+        except Exception as e:
+            print(f"Ошибка отправки сообщения пользователю с ID {user_id}: {e}")
+
+
+# Команда /broadcast
+async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.message.chat_id in ADMIN_ID:
+        await broadcast_fixed_message(context)
+        await update.message.reply_text("Сообщение успешно отправлено всем пользователям.")
+    else:
+        await update.message.reply_text("У вас нет прав для использования этой команды.")
 
 
 def main() -> None:
@@ -180,6 +199,7 @@ def main() -> None:
     application.add_handler(CommandHandler("admin", admin_instructions))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(CommandHandler("confirm", confirm_code))
+    application.add_handler(CommandHandler("broadcast", broadcast))
     application.add_handler(CommandHandler("confirmgift", confirm_gift_code))
     application.add_handler(MessageHandler(filters.COMMAND, unknown_command))
 
