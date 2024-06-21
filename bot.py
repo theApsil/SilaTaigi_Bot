@@ -1,4 +1,4 @@
-from config import ADMIN_ID, BOT_TOKEN, msg
+from config import ADMIN_ID, BOT_TOKEN, msg, gifts
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import random
@@ -131,16 +131,6 @@ async def confirm_gift_code(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         user_id = CHAT_DATA[code]['user_id']
         reset_user_bonus(user_id)
 
-        gifts = [
-            "Спортивный массаж (30 мин)",
-            "Антицеллюлитный (30 мин)",
-            "Шоколадное обертывание",
-            "Фруктово-ягодное обертывание",
-            "Скидка на следующее посещение 20%",
-            "Скидка на следующее посещение 30%",
-            "Скидка на следующее посещение 40%",
-            "Скидка на следующее посещение 50%",
-        ]
         gift = random.choice(gifts)
 
         await context.bot.send_message(chat_id=user_id, text=f"🎁🎁🎁\nУ вас накопился 1 подарок! Ваш подарок: {gift}")
